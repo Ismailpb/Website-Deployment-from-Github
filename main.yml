@@ -1,0 +1,36 @@
+---
+- name: "Deploying Contents From GitHub"
+  hosts: all
+  become: true
+  vars:
+    git_url: "https://github.com/Ismailpb/support.git"
+  tasks:
+    
+    - name: "Package Installation"
+      yum:
+        name:
+          - httpd
+          - php
+          - git
+        state: present
+            
+    - name: "Cloning git repository {{ git_url }}"
+      git:
+        repo: "{{ git_url }}"
+        dest: /var/website
+      register: git_status
+        
+        
+    - name: "Copying Site Contents To DocumentRoot"
+      when: git_status.changed == true
+      copy:
+        src: /var/website/
+        dest: /var/www/html/
+        remote_src: true
+            
+    - name: "Restarting/Enabling Apache"
+      when: git_status.changed == true
+      service:
+        name: httpd
+        state: restarted
+        enabled: true
